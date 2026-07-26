@@ -1,15 +1,10 @@
 "use client";
 
 import AppLayout from "../../../components/layout/app-layout";
-import EmployeeForm, {
-  EmployeeFormData,
-} from "../../../components/employees/employee-form";
+import EmployeeForm from "../../../components/employees/employee-form";
 
 export default function AddEmployeePage() {
-  const handleSubmit = (data: EmployeeFormData) => {
-    console.log("Employee Data:", data);
-    alert("Employee Added Successfully");
-  };
+  
 
   return (
     <AppLayout>
@@ -38,10 +33,7 @@ export default function AddEmployeePage() {
         </p>
       </div>
 
-      <EmployeeForm
-        onSubmit={handleSubmit}
-        onCancel={() => window.history.back()}
-      />
+      <EmployeeForm />
     </AppLayout>
   );
 }
