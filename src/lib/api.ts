@@ -65,6 +65,22 @@ export async function getCompanyById(id: string) {
   return text ? JSON.parse(text) : null;
 }
 
+export async function createCompany(data: any) {
+  const response = await fetch(`${API_URL}/companies`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(text);
+  }
+
+  return text ? JSON.parse(text) : null;
+}
+
 // ================= Update Company =================
 
 export async function updateCompany(id: string, company: any){
