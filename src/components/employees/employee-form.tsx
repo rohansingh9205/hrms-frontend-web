@@ -28,7 +28,7 @@ interface Designation {
   designationName: string;
 }
 
-interface EmployeeFormData {
+export interface EmployeeFormData {
   employeeCode: string;
   firstName: string;
   lastName: string;
