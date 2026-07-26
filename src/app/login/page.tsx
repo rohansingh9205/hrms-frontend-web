@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`;
 export default function LoginPage() {
   const router = useRouter();
 
