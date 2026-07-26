@@ -687,6 +687,21 @@ export async function getInvoiceById(id: string) {
 
   return text ? JSON.parse(text) : null;
 }
+export async function createInvoice(data: any) {
+  const response = await fetch(`${API_URL}/billing`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(text);
+  }
+
+  return text ? JSON.parse(text) : null;
+}
 export async function getReportSummary(companyId = "") {
   const url = companyId
     ? `${API_URL}/reports/summary?companyId=${companyId}`
