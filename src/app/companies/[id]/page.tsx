@@ -5,13 +5,11 @@ import CompanyProfile from "../../../components/companies/company-profile";
 import { useParams } from "next/navigation";
 
 export default function CompanyProfilePage() {
-
   const params = useParams();
 
   return (
     <AppLayout>
-      <CompanyProfile id={Number(params.id)} />
+      <CompanyProfile id={params.id as string} />
     </AppLayout>
   );
-
 }

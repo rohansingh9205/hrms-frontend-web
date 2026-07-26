@@ -1,491 +1,381 @@
-"use client";
+    "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import styles from "./employee-table.module.css";
+    import { useEffect, useMemo, useState } from "react";
+    import { useRouter } from "next/navigation";
+    import styles from "./employee-table.module.css";
 
-import {
+    import {
   getEmployees,
+  getCompanies,
   deleteEmployee,
 } from "@/lib/api";
 
-interface Employee {
+    interface Employee {
+    _id: string;
 
-  id: number;
+      employeeCode: string;
 
-  employeeCode: string;
+      firstName: string;
 
-  firstName: string;
+      lastName: string;
 
-  lastName: string;
+      email: string;
 
-  email: string;
+      phone: string;
 
-  phone: string;
+      departmentName: string;
 
-  departmentName: string;
+      designationName: string;
 
-  designationName: string;
+      companyName: string;
 
-  companyName: string;
-
-  joiningDate: string;
-
-}
-
-const PAGE_SIZE = 6;
-
-export default function EmployeeTable() {
-
-  const router = useRouter();
-
-  const [employeeData, setEmployeeData] =
-    useState<Employee[]>([]);
-
-  const [search, setSearch] =
-    useState("");
-
-  const [department, setDepartment] =
-    useState("All");
-
-  const [page, setPage] =
-    useState(1);
-
-  useEffect(() => {
-
-    async function loadEmployees() {
-
-      try {
-
-        const data =
-          await getEmployees();
-
-        setEmployeeData(data);
-
-      } catch (error) {
-
-        console.error(error);
-
-      }
+      joiningDate: string;
 
     }
 
-    loadEmployees();
+    const PAGE_SIZE = 6;
 
-  }, []);
+    export default function EmployeeTable() {
+      const [companies, setCompanies] = useState<any[]>([]);
+const [selectedCompany, setSelectedCompany] = useState("All");
 
-  const departments = useMemo(() => {
+const user =
 
-    return [
+  typeof window !== "undefined"
+    ? JSON.parse(localStorage.getItem("user") || "{}")
+    : {};
 
-      "All",
+const isSuperAdmin = user?.role === "SUPER_ADMIN";
 
-      ...new Set(
+      const router = useRouter();
 
-        employeeData.map(
+      const [employeeData, setEmployeeData] =
+        useState<Employee[]>([]);
 
-          (emp) => emp.departmentName
+      const [search, setSearch] =
+        useState("");
 
-        )
+      const [department, setDepartment] =
+        useState("All");
 
-      ),
+      const [page, setPage] =
+        useState(1);
+        
 
-    ];
+      useEffect(() => {
+  async function loadEmployees() {
+    try {
+      if (isSuperAdmin) {
+        const companyRes = await getCompanies();
+        setCompanies(Array.isArray(companyRes) ? companyRes : companyRes.data || []);
+      }
+      const data =
+  isSuperAdmin && selectedCompany !== "All"
+    ? await getEmployees(selectedCompany)
+    : await getEmployees();
 
-  }, [employeeData]);
+const employees = Array.isArray(data)
+  ? data
+  : data.data || [];
 
-  const filteredEmployees =
-    useMemo(() => {
+const formattedEmployees = employees.map((emp: any) => ({
+  ...emp,
+  departmentName: emp.departmentId?.departmentName || "",
+  companyName: emp.companyId?.companyName || "",
+}));
 
-      return employeeData.filter(
-        (employee) => {
+setEmployeeData(formattedEmployees);
 
-          const matchesSearch =
+      
+      
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
-            `${employee.firstName} ${employee.lastName}`
+  loadEmployees();
+}, [selectedCompany, isSuperAdmin]);
 
-              .toLowerCase()
+      const departments = useMemo(() => {
 
-              .includes(
-                search.toLowerCase()
-              )
+        return [
 
-            ||
+          "All",
 
-            employee.employeeCode
+          ...new Set(
 
-              .toLowerCase()
+            employeeData.map(
 
-              .includes(
-                search.toLowerCase()
-              )
+              (emp) => emp.departmentName
 
-            ||
+            )
 
-            employee.email
+          ),
 
-              .toLowerCase()
+        ];
 
-              .includes(
-                search.toLowerCase()
+      }, [employeeData]);
+
+      const filteredEmployees =
+        useMemo(() => {
+
+          return employeeData.filter(
+            (employee) => {
+
+              const matchesSearch =
+
+                `${employee.firstName} ${employee.lastName}`
+
+                  .toLowerCase()
+
+                  .includes(
+                    search.toLowerCase()
+                  )
+
+                ||
+
+                employee.employeeCode
+
+                  .toLowerCase()
+
+                  .includes(
+                    search.toLowerCase()
+                  )
+
+                ||
+
+                employee.email
+
+                  .toLowerCase()
+
+                  .includes(
+                    search.toLowerCase()
+                  );
+
+              const matchesDepartment =
+
+                department === "All"
+
+                ||
+
+                employee.departmentName ===
+                department;
+
+              return (
+
+                matchesSearch
+
+                &&
+
+                matchesDepartment
+
               );
 
-          const matchesDepartment =
-
-            department === "All"
-
-            ||
-
-            employee.departmentName ===
-            department;
-
-          return (
-
-            matchesSearch
-
-            &&
-
-            matchesDepartment
+            }
 
           );
 
-        }
+        }, [
 
-      );
+          employeeData,
 
-    }, [
+          search,
 
-      employeeData,
+          department,
 
-      search,
+        ]);
 
-      department,
+      const totalPages = Math.max(
 
-    ]);
+        1,
 
-  const totalPages = Math.max(
+        Math.ceil(
 
-    1,
+          filteredEmployees.length /
 
-    Math.ceil(
-
-      filteredEmployees.length /
-
-      PAGE_SIZE
-
-    )
-
-  );
-
-  const currentPage = Math.min(
-
-    page,
-
-    totalPages
-
-  );
-
-  const paginatedEmployees =
-
-    filteredEmployees.slice(
-
-      (currentPage - 1) *
-
-      PAGE_SIZE,
-
-      currentPage * PAGE_SIZE
-
-    );
-
-  const handleView = (
-    employee: Employee
-  ) => {
-
-    router.push(
-      `/employees/${employee.id}`
-    );
-
-  };
-
-  const handleEdit = (
-    employee: Employee
-  ) => {
-
-    router.push(
-      `/employees/edit/${employee.id}`
-    );
-
-  };
-
-  const handleDelete = async (
-    employee: Employee
-  ) => {
-
-    const confirmed = window.confirm(
-
-      `Delete ${employee.firstName} ${employee.lastName}?`
-
-    );
-
-    if (!confirmed) return;
-
-    try {
-
-      await deleteEmployee(
-        employee.id
-      );
-
-      setEmployeeData((prev) =>
-
-        prev.filter(
-
-          (emp) => emp.id !== employee.id
+          PAGE_SIZE
 
         )
 
       );
 
-      alert(
-        "Employee deleted successfully."
+      const currentPage = Math.min(
+
+        page,
+
+        totalPages
+
       );
 
-    } catch (error) {
+      const paginatedEmployees =
 
-      console.error(error);
+        filteredEmployees.slice(
 
-      alert("Delete failed.");
+          (currentPage - 1) *
 
-    }
+          PAGE_SIZE,
 
-  };
+          currentPage * PAGE_SIZE
 
-  return (   
-     <div className={styles.container}>
+        );
 
-      <div className={styles.toolbar}>
+      const handleView = (
+        employee: Employee
+      ) => {
 
-        <input
-          type="text"
-          placeholder="Search employee..."
-          value={search}
-          onChange={(e) => {
+        router.push(
+  `/employees/${employee._id}`
+);
 
-            setSearch(e.target.value);
+      };
 
-            setPage(1);
+      const handleEdit = (
+  employee: Employee
+) => {
 
-          }}
-          className={styles.searchInput}
-        />
+  router.push(
+    `/employees/edit/${employee._id}`
+  );
 
-        <select
-          value={department}
-          onChange={(e) => {
+};
 
-            setDepartment(e.target.value);
+      const handleDelete = async (
+        employee: Employee
+      ) => {
 
-            setPage(1);
+        const confirmed = window.confirm(
 
-          }}
-          
-          className={styles.select}
-        >
+          `Delete ${employee.firstName} ${employee.lastName}?`
 
-          {departments.map((dept) => (
+        );
 
-            <option
-              key={dept}
+        if (!confirmed) return;
+
+        try {
+
+          await deleteEmployee(
+    employee._id
+  );
+
+          setEmployeeData((prev) =>
+
+            prev.filter(
+    (emp) => emp._id !== employee._id
+  )
+
+          );
+
+          alert(
+            "Employee deleted successfully."
+          );
+
+        } catch (error) {
+
+          console.error(error);
+
+          alert("Delete failed.");
+
+        }
+
+      };
+
+      return (   
+        <div className={styles.container}>
+
+          <div className={styles.toolbar}>
+
+            <input
+              type="text"
+              placeholder="Search employee..."
+              value={search}
+              onChange={(e) => {
+
+                setSearch(e.target.value);
+
+                setPage(1);
+
+              }}
+              className={styles.searchInput}
+            />
+            
+            <select
+              value={department}
+              onChange={(e) => {
+
+                setDepartment(e.target.value);
+
+                setPage(1);
+
+              }}
+              
+              className={styles.select}
             >
-              {dept}
-            </option>
 
-          ))}
+              {departments.map((dept, index) => (
+    <option
+      key={`${dept}-${index}`}
+      value={dept}
+    >
+      {dept}
+    </option>
+  ))}
 
-        </select>
-        <button
-  className={styles.addButton}
-  onClick={() => router.push("/employees/add")}
->
-  + Add Employee
-</button>
+            </select>
+            <button
+      className={styles.addButton}
+      onClick={() => router.push("/employees/add")}
+    >
+      + Add Employee
+    </button>
 
-      </div>
+          </div>
 
-      <div className={styles.tableWrapper}>
+          <div className={styles.tableWrapper}>
 
-        <table className={styles.table}>
+            <table className={styles.table}>
 
-          <thead>
-
-            <tr>
-
-              <th>ID</th>
-
-              <th>Employee</th>
-
-              <th>Department</th>
-
-              <th>Designation</th>
-
-              <th>Phone</th>
-
-              <th>Joining</th>
-
-              <th>Status</th>
-
-              <th>Actions</th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {
-
-              paginatedEmployees.length === 0
-
-              ?
-
-              (
+              <thead>
 
                 <tr>
 
-                  <td
-                    colSpan={8}
-                    className={styles.empty}
-                  >
+                  <th>ID</th>
 
-                    No employees found.
+                  <th>Employee</th>
 
-                  </td>
+                  <th>Department</th>
+
+                  <th>Designation</th>
+
+                  <th>Phone</th>
+
+                  <th>Joining</th>
+
+                  <th>Status</th>
+
+                  <th>Actions</th>
 
                 </tr>
 
-              )
+              </thead>
 
-              :
+              <tbody>
 
-              (
+                {
 
-                paginatedEmployees.map(
+                  paginatedEmployees.length === 0
 
-                  (employee) => (
+                  ?
 
-                    <tr
-                      key={employee.id}
-                    >
+                  (
 
-                      <td>
+                    <tr>
 
-                        {employee.employeeCode}
+                      <td
+                        colSpan={8}
+                        className={styles.empty}
+                      >
 
-                      </td>
-
-                      <td>
-
-                        <div
-                          className={styles.employeeInfo}
-                        >
-
-                          <span
-                            className={styles.employeeName}
-                          >
-
-                            {employee.firstName}{" "}
-
-                            {employee.lastName}
-
-                          </span>
-
-                          <span
-                            className={styles.employeeEmail}
-                          >
-
-                            {employee.email}
-
-                          </span>
-
-                        </div>
-
-                      </td>
-
-                      <td>
-
-                        {employee.departmentName}
-
-                      </td>
-
-                      <td>
-
-                        {employee.designationName}
-
-                      </td>
-
-                      <td>
-
-                        {employee.phone}
-
-                      </td>
-
-                      <td>
-
-                        {employee.joiningDate}
-
-                      </td>
-
-                      <td>
-
-                        <span
-                          className={`${styles.status} ${styles.active}`}
-                        >
-
-                          Active
-
-                        </span>
-
-                      </td>
-
-                      <td>
-
-                        <div
-                          className={styles.actions}
-                        >
-
-                          <button
-                            className={styles.viewButton}
-                            onClick={() =>
-                              handleView(employee)
-                            }
-                          >
-
-                            View
-
-                          </button>
-
-                          <button
-                            className={styles.editButton}
-                            onClick={() =>
-                              handleEdit(employee)
-                            }
-                          >
-
-                            Edit
-
-                          </button>
-
-                          <button
-                            className={styles.deleteButton}
-                            onClick={() =>
-                              handleDelete(employee)
-                            }
-                          >
-
-                            Delete
-
-                          </button>
-
-                        </div>
+                        No employees found.
 
                       </td>
 
@@ -493,173 +383,302 @@ export default function EmployeeTable() {
 
                   )
 
-                )
+                  :
 
-              )
+                  (
 
-            }
+                    paginatedEmployees.map(
 
-          </tbody>
+                      (employee) => (
 
-        </table>
+                        <tr
+                          key={employee._id}
+                        >
 
-      </div>
-            <div className={styles.pagination}>
+                          <td>
 
-        <div className={styles.paginationInfo}>
+                            {employee.employeeCode}
 
-          Showing{" "}
+                          </td>
 
-          {
+                          <td>
 
-            filteredEmployees.length === 0
+                            <div
+                              className={styles.employeeInfo}
+                            >
 
-              ? 0
+                              <span
+                                className={styles.employeeName}
+                              >
 
-              : (currentPage - 1) * PAGE_SIZE + 1
+                                {employee.firstName}{" "}
 
-          }
+                                {employee.lastName}
 
-          {" - "}
+                              </span>
 
-          {
+                              <span
+                                className={styles.employeeEmail}
+                              >
 
-            Math.min(
+                                {employee.email}
 
-              currentPage * PAGE_SIZE,
+                              </span>
 
-              filteredEmployees.length
+                            </div>
 
-            )
+                          </td>
 
-          }
+                          <td>
 
-          {" of "}
+                            {employee.departmentName}
 
-          {filteredEmployees.length}
+                          </td>
 
-          {" employees"}
+                          <td>
 
-        </div>
+                            {employee.designationName}
 
-        <div className={styles.paginationControls}>
+                          </td>
 
-          <button
+                          <td>
 
-            type="button"
+                            {employee.phone}
 
-            className={styles.pageButton}
+                          </td>
 
-            disabled={currentPage === 1}
+                          <td>
 
-            onClick={() =>
+                            {employee.joiningDate}
 
-              setPage((prev) =>
+                          </td>
 
-                Math.max(prev - 1, 1)
+                          <td>
 
-              )
+                            <span
+                              className={`${styles.status} ${styles.active}`}
+                            >
 
-            }
+                              Active
 
-          >
+                            </span>
 
-            Previous
+                          </td>
 
-          </button>
+                          <td>
 
-          {
+                            <div
+                              className={styles.actions}
+                            >
 
-            Array.from(
+                              <button
+                                className={styles.viewButton}
+                                onClick={() =>
+                                  handleView(employee)
+                                }
+                              >
+
+                                View
+
+                              </button>
+
+                              <button
+                                className={styles.editButton}
+                                onClick={() =>
+                                  handleEdit(employee)
+                                }
+                              >
+
+                                Edit
+
+                              </button>
+
+                              <button
+                                className={styles.deleteButton}
+                                onClick={() =>
+                                  handleDelete(employee)
+                                }
+                              >
+
+                                Delete
+
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+
+                      )
+
+                    )
+
+                  )
+
+                }
+
+              </tbody>
+
+            </table>
+
+          </div>
+                <div className={styles.pagination}>
+
+            <div className={styles.paginationInfo}>
+
+              Showing{" "}
 
               {
 
-                length: totalPages,
+                filteredEmployees.length === 0
 
-              },
+                  ? 0
 
-              (_, index) => {
-
-                const pageNumber = index + 1;
-
-                return (
-
-                  <button
-
-                    key={pageNumber}
-
-                    type="button"
-
-                    className={`${styles.pageButton} ${
-
-                      currentPage === pageNumber
-
-                        ? styles.activePage
-
-                        : ""
-
-                    }`}
-
-                    onClick={() =>
-
-                      setPage(pageNumber)
-
-                    }
-
-                  >
-
-                    {pageNumber}
-
-                  </button>
-
-                );
+                  : (currentPage - 1) * PAGE_SIZE + 1
 
               }
 
-            )
+              {" - "}
 
-          }
-
-          <button
-
-            type="button"
-
-            className={styles.pageButton}
-
-            disabled={
-
-              currentPage === totalPages
-
-            }
-
-            onClick={() =>
-
-              setPage((prev) =>
+              {
 
                 Math.min(
 
-                  prev + 1,
+                  currentPage * PAGE_SIZE,
 
-                  totalPages
+                  filteredEmployees.length
 
                 )
 
-              )
+              }
 
-            }
+              {" of "}
 
-          >
+              {filteredEmployees.length}
 
-            Next
+              {" employees"}
 
-          </button>
+            </div>
+
+            <div className={styles.paginationControls}>
+
+              <button
+
+                type="button"
+
+                className={styles.pageButton}
+
+                disabled={currentPage === 1}
+
+                onClick={() =>
+
+                  setPage((prev) =>
+
+                    Math.max(prev - 1, 1)
+
+                  )
+
+                }
+
+              >
+
+                Previous
+
+              </button>
+
+              {
+
+                Array.from(
+
+                  {
+
+                    length: totalPages,
+
+                  },
+
+                  (_, index) => {
+
+                    const pageNumber = index + 1;
+
+                    return (
+
+                      <button
+
+                        key={pageNumber}
+
+                        type="button"
+
+                        className={`${styles.pageButton} ${
+
+                          currentPage === pageNumber
+
+                            ? styles.activePage
+
+                            : ""
+
+                        }`}
+
+                        onClick={() =>
+
+                          setPage(pageNumber)
+
+                        }
+
+                      >
+
+                        {pageNumber}
+
+                      </button>
+
+                    );
+
+                  }
+
+                )
+
+              }
+
+              <button
+
+                type="button"
+
+                className={styles.pageButton}
+
+                disabled={
+
+                  currentPage === totalPages
+
+                }
+
+                onClick={() =>
+
+                  setPage((prev) =>
+
+                    Math.min(
+
+                      prev + 1,
+
+                      totalPages
+
+                    )
+
+                  )
+
+                }
+
+              >
+
+                Next
+
+              </button>
+
+            </div>
+
+          </div>
 
         </div>
 
-      </div>
+      );
 
-    </div>
-
-  );
-
-}
+    }

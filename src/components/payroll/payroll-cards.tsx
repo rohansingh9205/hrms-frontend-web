@@ -2,30 +2,47 @@
 
 import styles from "./payroll-cards.module.css";
 
-const cards = [
-  {
-    title: "Total Payroll",
-    value: "₹ 2,80,000",
-    color: "#2563eb",
-  },
-  {
-    title: "Paid",
-    value: "₹ 1,28,000",
-    color: "#16a34a",
-  },
-  {
-    title: "Pending",
-    value: "₹ 1,52,000",
-    color: "#ef4444",
-  },
-  {
-    title: "Employees",
-    value: "5",
-    color: "#f59e0b",
-  },
-];
+interface Props {
+  payrollData: any[];
+}
 
-export default function PayrollCards() {
+export default function PayrollCards({ payrollData }: Props) {
+  const totalPayroll = payrollData.reduce(
+    (sum, item) => sum + (item.netSalary || 0),
+    0
+  );
+
+  const paidPayroll = payrollData
+    .filter((item) => item.status === "Paid")
+    .reduce((sum, item) => sum + (item.netSalary || 0), 0);
+
+  const pendingPayroll = payrollData
+    .filter((item) => item.status === "Pending")
+    .reduce((sum, item) => sum + (item.netSalary || 0), 0);
+
+  const cards = [
+    {
+      title: "Total Payroll",
+      value: `₹ ${totalPayroll.toLocaleString()}`,
+      color: "#2563eb",
+    },
+    {
+      title: "Paid",
+      value: `₹ ${paidPayroll.toLocaleString()}`,
+      color: "#16a34a",
+    },
+    {
+      title: "Pending",
+      value: `₹ ${pendingPayroll.toLocaleString()}`,
+      color: "#ef4444",
+    },
+    {
+      title: "Employees",
+      value: payrollData.length,
+      color: "#f59e0b",
+    },
+  ];
+
   return (
     <div className={styles.grid}>
       {cards.map((card) => (
@@ -37,7 +54,6 @@ export default function PayrollCards() {
           }}
         >
           <h4>{card.title}</h4>
-
           <h2>{card.value}</h2>
         </div>
       ))}

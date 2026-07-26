@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import AppLayout from "../../components/layout/app-layout";
-import AttendanceTable from "../../components/attendance/attendance-table";
 import ExcelUpload from "../../components/attendance/excel-upload";
+import MonthlyAttendance from "../../components/attendance/monthly-attendance";
 
 export default function AttendancePage() {
   const [tab, setTab] = useState<"manual" | "excel">("manual");
@@ -84,8 +84,7 @@ export default function AttendancePage() {
         </button>
       </div>
 
-      {tab === "manual" && <AttendanceTable />}
-
+{tab === "manual" && <MonthlyAttendance />}
 {tab === "excel" && <ExcelUpload />}
     </AppLayout>
   );

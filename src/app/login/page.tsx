@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-const API_URL = "http://localhost:8080/api/auth/login";
-
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
 export default function LoginPage() {
   const router = useRouter();
 
@@ -49,11 +48,31 @@ export default function LoginPage() {
 
     }
 
+
     const data = await response.json();
 
+console.log("LOGIN RESPONSE =", data);
+console.log("TOKEN =", data.token);
+
+
+
     localStorage.setItem("token", data.token);
+    console.log(
+  "TOKEN AFTER SAVE =",
+  localStorage.getItem("token")
+);
 
     localStorage.setItem("loggedIn", "true");
+    localStorage.setItem("role", data.user.role);
+localStorage.setItem("companyId", data.user.companyId || "");
+localStorage.setItem(
+  "userName",
+  `${data.user.firstName} ${data.user.lastName}`
+);
+localStorage.setItem(
+  "user",
+  JSON.stringify(data.user)
+);
 
     alert(data.message);
 

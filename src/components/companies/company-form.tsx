@@ -1,325 +1,332 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./company-form.module.css";
 
 import {
   createCompany,
-  getCompanyById,
   updateCompany,
 } from "@/lib/api";
 
-export default function CompanyForm() {
+interface Props {
+  initialData?: any;
+  isEdit?: boolean;
+}
 
+export default function CompanyForm({
+  initialData,
+  isEdit = false,
+}: Props) {
   const router = useRouter();
-
-  const params = useParams();
-
-  const isEdit = params?.id !== undefined;
 
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-
+    // Company Details
     companyName: "",
-    adminName: "",
-    gstNumber: "",
-    pfNumber: "",
-    esiNumber: "",
-    phone: "",
+    companyCode: "",
     email: "",
-    status: "ACTIVE",
+    phone: "",
+    website: "",
     address: "",
+    city: "",
+    state: "",
+    country: "India",
+    postalCode: "",
 
+    // Admin Details
+    adminFirstName: "",
+    adminLastName: "",
+    adminEmail: "",
+    adminPassword: "",
   });
 
   useEffect(() => {
+    if (initialData) {
+      setForm({
+        companyName: initialData.companyName || "",
+        companyCode: initialData.companyCode || "",
+        email: initialData.email || "",
+        phone: initialData.phone || "",
+        website: initialData.website || "",
+        address: initialData.address || "",
+        city: initialData.city || "",
+        state: initialData.state || "",
+        country: initialData.country || "India",
+        postalCode: initialData.postalCode || "",
 
-    if (!isEdit) return;
-
-    async function loadCompany() {
-
-      try {
-
-        const data = await getCompanyById(
-          Number(params.id)
-        );
-
-        setForm({
-
-          companyName: data.companyName,
-          adminName: data.adminName,
-          gstNumber: data.gstNumber,
-          pfNumber: data.pfNumber,
-          esiNumber: data.esiNumber,
-          phone: data.phone,
-          email: data.email,
-          status: data.status,
-          address: data.address,
-
-        });
-
-      } catch (error) {
-
-        console.error(error);
-
-      }
-
+        // Edit mode me admin details update nahi hongi
+        adminFirstName: "",
+        adminLastName: "",
+        adminEmail: "",
+        adminPassword: "",
+      });
     }
-
-    loadCompany();
-
-  }, [isEdit, params]);
+  }, [initialData]);
 
   function handleChange(
     e: React.ChangeEvent<
-      HTMLInputElement |
-      HTMLTextAreaElement |
-      HTMLSelectElement
+      HTMLInputElement | HTMLTextAreaElement
     >
   ) {
-
     setForm({
-
       ...form,
-
       [e.target.name]: e.target.value,
-
     });
-
   }
 
   async function handleSubmit() {
-
     if (
       !form.companyName ||
-      !form.adminName ||
-      !form.email
+      !form.companyCode ||
+      !form.email ||
+      !form.phone
+      
     ) {
-
-      alert("Please fill required fields.");
-
+      alert("Please fill all required fields.");
       return;
+    }
 
+    if (
+      !isEdit &&
+      (
+        !form.adminFirstName ||
+        !form.adminEmail ||
+        !form.adminPassword
+      )
+    ) {
+      alert("Please fill admin details.");
+      return;
     }
 
     try {
-
       setLoading(true);
 
       let result;
 
-      if (isEdit) {
+const companyData = {
+  companyName: form.companyName,
+  companyCode: form.companyCode,
+  email: form.email,
+  phone: form.phone,
+  website: form.website,
+  address: form.address,
+  city: form.city,
+  state: form.state,
+  country: form.country,
+  postalCode: form.postalCode,
+};
 
-        result = await updateCompany(
-          Number(params.id),
-          form
-        );
+if (isEdit) {
+  result = await updateCompany(
+    initialData._id,
+    companyData
+  );
 
-      } else {
+  alert("Company Updated Successfully.");
+} else {
+  result = await createCompany(form);
 
-        result = await createCompany(form);
-
-      }
+  alert("Company Created Successfully.");
+}
 
       console.log(result);
 
-      alert(
-
-        isEdit
-          ? "Company Updated Successfully."
-          : "Company Created Successfully."
-
-      );
-
-      router.push("/companies");
-
+      router.replace("/companies");
     } catch (error: any) {
-
       console.error(error);
-
       alert(error.message);
-
     } finally {
-
       setLoading(false);
-
     }
-
   }
 
   return (
+  <div className={styles.container}>
 
-    <div className={styles.container}>
+  <h2>{isEdit ? "Edit Company" : "Add Company"}</h2>
 
-      <h2>
+  <div className={styles.grid}>
 
-        {isEdit
-          ? "Edit Company"
-          : "Add Company"}
-
-      </h2>
-
-      <div className={styles.grid}>
-
-        <div className={styles.inputGroup}>
-
-          <label>Company Name</label>
-
-          <input
-            name="companyName"
-            value={form.companyName}
-            onChange={handleChange}
-            placeholder="Company Name"
-          />
-
-        </div>
-
-        <div className={styles.inputGroup}>
-
-          <label>Admin Name</label>
-
-          <input
-            name="adminName"
-            value={form.adminName}
-            onChange={handleChange}
-            placeholder="Admin Name"
-          />
-
-        </div>
-
-        <div className={styles.inputGroup}>
-
-          <label>GST Number</label>
-
-          <input
-            name="gstNumber"
-            value={form.gstNumber}
-            onChange={handleChange}
-            placeholder="GST Number"
-          />
-
-        </div>
-
-        <div className={styles.inputGroup}>
-
-          <label>PF Number</label>
-
-          <input
-            name="pfNumber"
-            value={form.pfNumber}
-            onChange={handleChange}
-            placeholder="PF Number"
-          />
-
-        </div>
-                <div className={styles.inputGroup}>
-
-          <label>ESI Number</label>
-
-          <input
-            name="esiNumber"
-            value={form.esiNumber}
-            onChange={handleChange}
-            placeholder="ESI Number"
-          />
-
-        </div>
-
-        <div className={styles.inputGroup}>
-
-          <label>Phone Number</label>
-
-          <input
-            name="phone"
-            value={form.phone}
-            onChange={handleChange}
-            placeholder="Phone Number"
-          />
-
-        </div>
-
-        <div className={styles.inputGroup}>
-
-          <label>Email</label>
-
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="Company Email"
-          />
-
-        </div>
-
-        <div className={styles.inputGroup}>
-
-          <label>Status</label>
-
-          <select
-            name="status"
-            value={form.status}
-            onChange={handleChange}
-          >
-
-            <option value="ACTIVE">
-              Active
-            </option>
-
-            <option value="ON_HOLD">
-              On Hold
-            </option>
-
-          </select>
-
-        </div>
-
-      </div>
-
-      <div className={styles.addressBox}>
-
-        <label>Company Address</label>
-
-        <textarea
-          rows={4}
-          name="address"
-          value={form.address}
-          onChange={handleChange}
-          placeholder="Company Address"
-        />
-
-      </div>
-
-      <div className={styles.buttonArea}>
-
-        <button
-          className={styles.cancel}
-          onClick={() => router.push("/companies")}
-        >
-          Cancel
-        </button>
-
-        <button
-          type="button"
-          className={styles.save}
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-
-          {loading
-            ? "Saving..."
-            : isEdit
-            ? "Update Company"
-            : "Save Company"}
-
-        </button>
-
-      </div>
-
+    <div className={styles.inputGroup}>
+      <label>Company Name *</label>
+      <input
+        name="companyName"
+        value={form.companyName}
+        onChange={handleChange}
+        placeholder="Enter Company Name"
+      />
     </div>
 
-  );
+    <div className={styles.inputGroup}>
+      <label>Company Code *</label>
+      <input
+        name="companyCode"
+        value={form.companyCode}
+        onChange={handleChange}
+        placeholder="RST001"
+      />
+    </div>
 
+    <div className={styles.inputGroup}>
+      <label>Company Email *</label>
+      <input
+        type="email"
+        name="email"
+        value={form.email}
+        onChange={handleChange}
+        placeholder="company@email.com"
+      />
+    </div>
+
+    <div className={styles.inputGroup}>
+      <label>Phone *</label>
+      <input
+        name="phone"
+        value={form.phone}
+        onChange={handleChange}
+        placeholder="9876543210"
+      />
+    </div>
+
+    <div className={styles.inputGroup}>
+      <label>Website</label>
+      <input
+        name="website"
+        value={form.website}
+        onChange={handleChange}
+        placeholder="https://example.com"
+      />
+    </div>
+
+    <div className={styles.inputGroup}>
+      <label>City</label>
+      <input
+        name="city"
+        value={form.city}
+        onChange={handleChange}
+        placeholder="Lucknow"
+      />
+    </div>
+
+    <div className={styles.inputGroup}>
+      <label>State</label>
+      <input
+        name="state"
+        value={form.state}
+        onChange={handleChange}
+        placeholder="Uttar Pradesh"
+      />
+    </div>
+
+    <div className={styles.inputGroup}>
+      <label>Country</label>
+      <input
+        name="country"
+        value={form.country}
+        onChange={handleChange}
+      />
+    </div>
+
+    <div className={styles.inputGroup}>
+      <label>Postal Code</label>
+      <input
+        name="postalCode"
+        value={form.postalCode}
+        onChange={handleChange}
+        placeholder="226001"
+      />
+    </div>
+
+  </div>
+
+  <div className={styles.addressBox}>
+    <label>Address</label>
+
+    <textarea
+      rows={4}
+      name="address"
+      value={form.address}
+      onChange={handleChange}
+      placeholder="Enter Company Address"
+    />
+  </div>
+  {!isEdit && (
+  <>
+    <h3 style={{ marginTop: "30px" }}>
+      Company Admin Details
+    </h3>
+
+    <div className={styles.grid}>
+      <div className={styles.inputGroup}>
+        <label>Admin First Name *</label>
+        <input
+          name="adminFirstName"
+          value={form.adminFirstName}
+          onChange={handleChange}
+          placeholder="Rohan"
+        />
+      </div>
+
+      <div className={styles.inputGroup}>
+        <label>Admin Last Name</label>
+        <input
+          name="adminLastName"
+          value={form.adminLastName}
+          onChange={handleChange}
+          placeholder="Singh"
+        />
+      </div>
+
+      <div className={styles.inputGroup}>
+        <label>Admin Email *</label>
+        <input
+          type="email"
+          name="adminEmail"
+          value={form.adminEmail}
+          onChange={handleChange}
+          placeholder="admin@company.com"
+        />
+      </div>
+
+      <div className={styles.inputGroup}>
+        <label>Admin Password *</label>
+        <input
+          type="password"
+          name="adminPassword"
+          value={form.adminPassword}
+          onChange={handleChange}
+          placeholder="123456"
+        />
+      </div>
+    </div>
+  </>
+)}
+
+<div className={styles.buttonArea}>
+  <button
+    type="button"
+    className={styles.cancel}
+    onClick={() => router.push("/companies")}
+  >
+    Cancel
+  </button>
+
+  <button
+    type="button"
+    className={styles.save}
+    onClick={handleSubmit}
+    disabled={loading}
+  >
+    {loading
+      ? "Saving..."
+      : isEdit
+      ? "Update Company"
+      : "Save Company"}
+  </button>
+</div>
+
+</div>
+  );
 }

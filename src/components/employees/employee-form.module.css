@@ -8,14 +8,15 @@
 .container h2 {
   margin: 0 0 24px;
   font-size: 24px;
-  color: #0f172a;
   font-weight: 700;
+  color: #0f172a;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
   gap: 20px;
+  align-items: start;
 }
 
 .group {
@@ -35,15 +36,14 @@
 .group textarea {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #dbe4ee;
+  border: 1px solid #d1d5db;
   border-radius: 10px;
-  font-size: 14px;
   outline: none;
-  background: #fff;
-  transition: all 0.25s ease;
-  resize: vertical;
+  font-size: 14px;
   font-family: inherit;
+  background: #fff;
   box-sizing: border-box;
+  transition: all 0.25s ease;
 }
 
 .group input:focus,
@@ -54,6 +54,7 @@
 }
 
 .group textarea {
+  resize: vertical;
   min-height: 110px;
 }
 
@@ -64,15 +65,14 @@
 .buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 30px;
-  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 25px;
 }
 
 .buttons button {
+  padding: 12px 22px;
   border: none;
   border-radius: 10px;
-  padding: 12px 22px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -97,14 +97,25 @@
   background: #1d4ed8;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
   .container {
     padding: 18px;
   }
 
   .grid {
     grid-template-columns: 1fr;
-    gap: 16px;
   }
 
   .buttons {

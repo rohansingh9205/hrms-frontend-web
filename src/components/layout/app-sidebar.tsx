@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FaTachometerAlt,
@@ -66,72 +67,83 @@ const menuItems = [
 ];
 
 export default function AppSidebar() {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+  const storedUser = localStorage.getItem("user");
+
+  console.log("Stored User:", storedUser);
+
+  if (storedUser) {
+    const parsedUser = JSON.parse(storedUser);
+
+    console.log("Parsed User:", parsedUser);
+
+    setUser(parsedUser);
+  }
+}, []);
+
   return (
     <aside className={styles.sidebar}>
-          <div className={styles.logoSection}>
-
-        <div className={styles.logoBox}>
-          R&S
-        </div>
+      <div className={styles.logoSection}>
+        <div className={styles.logoBox}>R&S</div>
 
         <div>
-
           <h2>R&S Tech Info</h2>
-
           <p>HRMS Software</p>
-
         </div>
-
       </div>
 
       <div className={styles.searchBox}>
-
         <FaSearch />
 
         <input
           type="text"
           placeholder="Search..."
         />
-
       </div>
 
       <nav className={styles.menu}>
+        {menuItems
+          .filter((item) => {
+            // Sirf SUPER_ADMIN ko Company Management dikhana hai
+            if (
+              item.href === "/companies" &&
+              user?.role !== "SUPER_ADMIN"
+            ) {
+              return false;
+            }
 
-        {menuItems.map((item) => (
+            return true;
+          })
+          .map((item) => (
+            <Link
+              key={item.title}
+              href={item.href}
+              className={styles.menuItem}
+            >
+              <span className={styles.icon}>
+                {item.icon}
+              </span>
 
-          <Link
-            key={item.title}
-            href={item.href}
-            className={styles.menuItem}
-          >
-
-            <span className={styles.icon}>
-              {item.icon}
-            </span>
-
-            <span>
-              {item.title}
-            </span>
-
-          </Link>
-
-        ))}
-
+              <span>{item.title}</span>
+            </Link>
+          ))}
       </nav>
 
       <div className={styles.bottomCard}>
-
         <FaUserCircle className={styles.userIcon} />
 
         <div>
+          <h4>
+            {user
+              ? `${user.firstName} ${user.lastName}`
+              : "User"}
+          </h4>
 
-          <h4>Super Admin</h4>
-
-          <p>R&S Tech Info</p>
-
+          <p>{user?.role || ""}</p>
         </div>
-
       </div>
-        </aside>
+    </aside>
   );
 }

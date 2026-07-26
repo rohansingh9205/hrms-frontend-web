@@ -1,81 +1,44 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import styles from "./payroll-table.module.css";
-import PayslipDialog from "./payslip-dialog";
 import { useRouter } from "next/navigation";
+import styles from "./payroll-table.module.css";
 
-interface PayrollEmployee {
-  id: string;
-  name: string;
-  company: string;
-  designation: string;
-  salary: number;
-  month: string;
-  status: "Paid" | "Pending";
+import ViewPayrollDialog from "./view-payroll-dialog";
+import EditPayrollDialog from "./edit-payroll-dialog";
+import PayslipDialog from "./payslip-dialog";
+
+interface Props {
+  payrollData: any[];
 }
 
-const payrollData: PayrollEmployee[] = [
-  {
-    id: "EMP001",
-    name: "Rohan Singh",
-    company: "Khushi Hind",
-    designation: "Frontend Developer",
-    salary: 65000,
-    month: "July 2026",
-    status: "Pending",
-  },
-  {
-    id: "EMP002",
-    name: "Amit Kumar",
-    company: "ABC Industries",
-    designation: "Backend Developer",
-    salary: 72000,
-    month: "July 2026",
-    status: "Paid",
-  },
-  {
-    id: "EMP003",
-    name: "Neha Sharma",
-    company: "Khushi Hind",
-    designation: "HR Executive",
-    salary: 45000,
-    month: "July 2026",
-    status: "Pending",
-  },
-  {
-    id: "EMP004",
-    name: "Priya Verma",
-    company: "Khushi Hind",
-    designation: "UI Designer",
-    salary: 56000,
-    month: "July 2026",
-    status: "Paid",
-  },
-  {
-    id: "EMP005",
-    name: "Akash Gupta",
-    company: "ABC Industries",
-    designation: "Accountant",
-    salary: 42000,
-    month: "July 2026",
-    status: "Pending",
-  },
-];
-
-export default function PayrollTable() {
-  const [search, setSearch] = useState("");
-  const [openPayslip, setOpenPayslip] = useState(false);
+export default function PayrollTable({ payrollData }: Props) {
   const router = useRouter();
 
+  const [search, setSearch] = useState("");
+
+  const [openView, setOpenView] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [openPayslip, setOpenPayslip] = useState(false);
+
+  const [selectedPayroll, setSelectedPayroll] = useState<any>(null);
+
   const filtered = useMemo(() => {
-    return payrollData.filter(
-      (emp) =>
-        emp.name.toLowerCase().includes(search.toLowerCase()) ||
-        emp.id.toLowerCase().includes(search.toLowerCase()) ||
-        emp.company.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [search]);
+    return payrollData.filter((emp: any) => {
+      const employeeName =
+        `${emp.employeeId?.firstName || ""} ${emp.employeeId?.lastName || ""}`;
+
+      return (
+        employeeName.toLowerCase().includes(search.toLowerCase()) ||
+        (emp.employeeId?.employeeCode || "")
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        (emp.companyId?.companyName || "")
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      );
+    });
+  }, [payrollData, search]);
 
   return (
     <div className={styles.container}>
@@ -88,11 +51,11 @@ export default function PayrollTable() {
         />
 
         <button
-  className={styles.generate}
-  onClick={() => router.push("/payroll/generate")}
->
-  Generate Payroll
-</button>
+          className={styles.generate}
+          onClick={() => router.push("/payroll/generate")}
+        >
+          Generate Payroll
+        </button>
       </div>
 
       <table className={styles.table}>
@@ -110,14 +73,23 @@ export default function PayrollTable() {
         </thead>
 
         <tbody>
-          {filtered.map((emp) => (
-            <tr key={emp.id}>
-              <td>{emp.id}</td>
-              <td>{emp.name}</td>
-              <td>{emp.company}</td>
-              <td>{emp.designation}</td>
-              <td>₹ {emp.salary.toLocaleString()}</td>
-              <td>{emp.month}</td>
+          {filtered.map((emp: any) => (
+            <tr key={emp._id}>
+              <td>{emp.employeeId?.employeeCode}</td>
+
+              <td>
+                {emp.employeeId?.firstName} {emp.employeeId?.lastName}
+              </td>
+
+              <td>{emp.companyId?.companyName}</td>
+
+              <td>{emp.employeeId?.designation || "--"}</td>
+
+              <td>₹ {emp.netSalary?.toLocaleString()}</td>
+
+              <td>
+                {emp.month} / {emp.year}
+              </td>
 
               <td>
                 <span
@@ -133,20 +105,38 @@ export default function PayrollTable() {
 
               <td>
                 <div className={styles.actions}>
-                  <button className={styles.view}>
+                  {/* VIEW */}
+                  <button
+                    className={styles.view}
+                    onClick={() => {
+                      setSelectedPayroll(emp);
+                      setOpenView(true);
+                    }}
+                  >
                     View
                   </button>
 
-                  <button className={styles.edit}>
+                  {/* EDIT */}
+                  <button
+                    className={styles.edit}
+                    onClick={() => {
+                      setSelectedPayroll(emp);
+                      setOpenEdit(true);
+                    }}
+                  >
                     Edit
                   </button>
 
+                  {/* PAYSLIP */}
                   <button
-                  className={styles.payslip}
-                   onClick={() => setOpenPayslip(true)}
-                      >
-                       Payslip
-                    </button>
+                    className={styles.payslip}
+                    onClick={() => {
+                      setSelectedPayroll(emp);
+                      setOpenPayslip(true);
+                    }}
+                  >
+                    Payslip
+                  </button>
                 </div>
               </td>
             </tr>
@@ -154,20 +144,34 @@ export default function PayrollTable() {
 
           {filtered.length === 0 && (
             <tr>
-              <td
-                colSpan={8}
-                className={styles.empty}
-              >
-                No employee found.
+              <td colSpan={8} className={styles.empty}>
+                No payroll records found.
               </td>
             </tr>
           )}
         </tbody>
       </table>
+
+      {/* VIEW DIALOG */}
+      <ViewPayrollDialog
+        open={openView}
+        onClose={() => setOpenView(false)}
+        payroll={selectedPayroll}
+      />
+
+      {/* EDIT DIALOG */}
+      <EditPayrollDialog
+        open={openEdit}
+        onClose={() => setOpenEdit(false)}
+        payroll={selectedPayroll}
+      />
+
+      {/* PAYSLIP DIALOG */}
       <PayslipDialog
-  open={openPayslip}
-  onClose={() => setOpenPayslip(false)}
-/>
+        open={openPayslip}
+        onClose={() => setOpenPayslip(false)}
+        payroll={selectedPayroll}
+      />
     </div>
   );
 }

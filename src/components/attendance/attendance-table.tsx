@@ -1,70 +1,79 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./attendance-table.module.css";
 import { useRouter } from "next/navigation";
+import { getAttendance } from "@/lib/api";
 
 interface Attendance {
-  id: string;
-  name: string;
-  company: string;
-  date: string;
-  status: "Present" | "Absent" | "Half Day";
-}
+  _id: string;
 
-const attendanceData: Attendance[] = [
-  {
-    id: "EMP001",
-    name: "Rohan Singh",
-    company: "Khushi Hind",
-    date: "08-07-2026",
-    status: "Present",
-  },
-  {
-    id: "EMP002",
-    name: "Amit Kumar",
-    company: "ABC Industries",
-    date: "08-07-2026",
-    status: "Absent",
-  },
-  {
-    id: "EMP003",
-    name: "Neha Sharma",
-    company: "Khushi Hind",
-    date: "08-07-2026",
-    status: "Half Day",
-  },
-  {
-    id: "EMP004",
-    name: "Priya Verma",
-    company: "Khushi Hind",
-    date: "08-07-2026",
-    status: "Present",
-  },
-  {
-    id: "EMP005",
-    name: "Akash Gupta",
-    company: "ABC Industries",
-    date: "08-07-2026",
-    status: "Present",
-  },
-];
+  employeeId: {
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+  };
+
+  companyId: {
+    companyName: string;
+  };
+
+  date: string;
+  status: string;
+}
 
 const PAGE_SIZE = 5;
 
-export default function AttendanceTable() {
-    const router = useRouter();
+interface Props {
+  onAddAttendance: () => void;
+}
+
+export default function AttendanceTable({
+  onAddAttendance,
+}: Props) {
+  const router = useRouter();
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
+  const [attendanceData, setAttendanceData] = useState<
+    Attendance[]
+  >([]);
+
+  useEffect(() => {
+    async function loadAttendance() {
+      try {
+        const response = await getAttendance();
+
+        setAttendanceData(
+          Array.isArray(response)
+            ? response
+            : response.data || []
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    loadAttendance();
+  }, []);
+
   const filtered = useMemo(() => {
-    return attendanceData.filter(
-      (emp) =>
-        emp.name.toLowerCase().includes(search.toLowerCase()) ||
-        emp.id.toLowerCase().includes(search.toLowerCase()) ||
-        emp.company.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [search]);
+    return attendanceData.filter((emp) => {
+      const fullName =
+        `${emp.employeeId.firstName} ${emp.employeeId.lastName}`.toLowerCase();
+
+      return (
+        fullName.includes(search.toLowerCase()) ||
+        emp.employeeId.employeeCode
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        emp.companyId.companyName
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      );
+    });
+  }, [attendanceData, search]);
 
   const rows = filtered.slice(
     (page - 1) * PAGE_SIZE,
@@ -81,16 +90,19 @@ export default function AttendanceTable() {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <button className={styles.addButton}>
-          Mark Attendance
-        </button>
+        <button
+  className={styles.addButton}
+  onClick={onAddAttendance}
+>
+  Mark Attendance
+</button>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Name</th>
+            <th>Employee Code</th>
+            <th>Employee Name</th>
             <th>Company</th>
             <th>Date</th>
             <th>Status</th>
@@ -100,20 +112,32 @@ export default function AttendanceTable() {
 
         <tbody>
           {rows.map((emp) => (
-            <tr key={emp.id}>
-              <td>{emp.id}</td>
-              <td>{emp.name}</td>
-              <td>{emp.company}</td>
-              <td>{emp.date}</td>
-              <td>{emp.status}</td>
+            <tr key={emp._id}>
+              <td>{emp.employeeId.employeeCode}</td>
+
               <td>
-  <button
-    className={styles.viewButton}
-    onClick={() => router.push(`/attendance/${emp.id}`)}
-  >
-    View
-  </button>
-</td>
+                {emp.employeeId.firstName}{" "}
+                {emp.employeeId.lastName}
+              </td>
+
+              <td>{emp.companyId.companyName}</td>
+
+              <td>
+                {new Date(emp.date).toLocaleDateString()}
+              </td>
+
+              <td>{emp.status}</td>
+
+              <td>
+                <button
+                  className={styles.viewButton}
+                  onClick={() =>
+                    router.push(`/attendance/${emp._id}`)
+                  }
+                >
+                  View
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

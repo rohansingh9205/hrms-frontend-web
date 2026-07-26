@@ -3,25 +3,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./company-table.module.css";
-import {
-  getCompanies,
-  deleteCompany,
-} from "@/lib/api";
+import { getCompanies, deleteCompany } from "@/lib/api";
 
 interface Company {
-  id: number;
+  _id: string;
   companyName: string;
-  adminName: string;
-  gstNumber: string;
-  pfNumber: string;
-  esiNumber: string;
-  status: string;
+  companyCode: string;
+  email: string;
+  phone: string;
+  website: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  isActive: boolean;
 }
 
 const PAGE_SIZE = 5;
 
 export default function CompanyTable() {
-
   const router = useRouter();
 
   const [companyData, setCompanyData] = useState<Company[]>([]);
@@ -29,39 +30,35 @@ export default function CompanyTable() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-
     async function loadCompanies() {
-
       try {
+        const response = await getCompanies();
 
-        const data = await getCompanies();
-
-        setCompanyData(data);
-
+        // Handles both {data:[...]} and [...] responses
+        if (Array.isArray(response)) {
+          setCompanyData(response);
+        } else {
+          setCompanyData(response.data || []);
+        }
       } catch (error) {
-
-        console.error(error);
-
+        console.error("Error loading companies:", error);
       }
-
     }
 
     loadCompanies();
-
   }, []);
 
   const filteredCompanies = useMemo(() => {
+    return companyData.filter((company) => {
+      const q = search.toLowerCase();
 
-    return companyData.filter((company) =>
-
-      company.companyName.toLowerCase().includes(search.toLowerCase()) ||
-
-      company.adminName.toLowerCase().includes(search.toLowerCase()) ||
-
-      company.gstNumber.toLowerCase().includes(search.toLowerCase())
-
-    );
-
+      return (
+        company.companyName.toLowerCase().includes(q) ||
+        company.companyCode.toLowerCase().includes(q) ||
+        company.email.toLowerCase().includes(q) ||
+        company.phone.toLowerCase().includes(q)
+      );
+    });
   }, [companyData, search]);
 
   const totalPages = Math.max(
@@ -74,58 +71,44 @@ export default function CompanyTable() {
     page * PAGE_SIZE
   );
 
-  const handleView = (id: number) => {
+  const handleView = (id: string) => {
     router.push(`/companies/${id}`);
   };
 
-  const handleEdit = (id: number) => {
+  const handleEdit = (id: string) => {
     router.push(`/companies/edit/${id}`);
   };
 
- const handleDelete = async (id: number, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
+    const ok = window.confirm(`Delete ${name}?`);
 
-  console.log("Delete clicked", id, name);
+    if (!ok) return;
 
-  const ok = window.confirm(`Delete ${name}?`);
+    try {
+      await deleteCompany(id);
 
-  if (!ok) return;
+      setCompanyData((prev) =>
+        prev.filter((company) => company._id !== id)
+      );
 
-  try {
-
-    await deleteCompany(id);
-
-    setCompanyData((prev) =>
-      prev.filter((company) => company.id !== id)
-    );
-
-    alert("Company deleted successfully.");
-
-  } catch (error) {
-
-    console.error(error);
-
-    alert("Delete failed.");
-
-  }
-
-};
+      alert("Company deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      alert("Delete failed.");
+    }
+  };
 
   return (
-
     <div className={styles.container}>
-
       <div className={styles.topBar}>
-
         <input
           className={styles.search}
           type="text"
           placeholder="Search Company..."
           value={search}
           onChange={(e) => {
-
             setSearch(e.target.value);
             setPage(1);
-
           }}
         />
 
@@ -135,95 +118,69 @@ export default function CompanyTable() {
         >
           + Add Company
         </button>
-
       </div>
 
       <table className={styles.table}>
-
         <thead>
-
           <tr>
-
             <th>Company</th>
-            <th>Admin</th>
-            <th>Employees</th>
-            <th>GST</th>
-            <th>PF</th>
-            <th>ESI</th>
+            <th>Company Code</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>City</th>
             <th>Status</th>
             <th>Action</th>
-
           </tr>
-
         </thead>
 
         <tbody>
+          {companies.length > 0 ? (
+            companies.map((company) => (
+              <tr key={company._id}>
+                <td>{company.companyName}</td>
+                <td>{company.companyCode}</td>
+                <td>{company.email}</td>
+                <td>{company.phone}</td>
+                <td>{company.city || "-"}</td>
 
-          {companies.map((company) => (
+                <td>
+                  <span className={styles.status}>
+                    {company.isActive ? "Active" : "Inactive"}
+                  </span>
+                </td>
 
-            <tr key={company.id}>
+                <td>
+                  <div className={styles.action}>
+                    <button
+                      className={styles.view}
+                      onClick={() => handleView(company._id)}
+                    >
+                      View
+                    </button>
 
-              <td>{company.companyName}</td>
+                    <button
+                      className={styles.edit}
+                      onClick={() => handleEdit(company._id)}
+                    >
+                      Edit
+                    </button>
 
-              <td>{company.adminName}</td>
-
-              <td>0</td>
-
-              <td>{company.gstNumber}</td>
-
-              <td>{company.pfNumber}</td>
-
-              <td>{company.esiNumber}</td>
-
-              <td>
-
-                <span className={styles.status}>
-
-                  {company.status}
-
-                </span>
-
-              </td>
-
-              <td>
-
-                <div className={styles.action}>
-
-                  <button
-                    className={styles.view}
-                    onClick={() => handleView(company.id)}
-                  >
-                    View
-                  </button>
-
-                  <button
-                    className={styles.edit}
-                    onClick={() => handleEdit(company.id)}
-                  >
-                    Edit
-                  </button>
-
-                  <button
-  className={styles.delete}
-  onClick={() => handleDelete(company.id, company.companyName)}
->
-  Delete
-</button>
-
-                </div>
-
-              </td>
-
-            </tr>
-
-          ))}
-
-          {companies.length === 0 && (
-
+                    <button
+                      className={styles.delete}
+                      onClick={() =>
+                        handleDelete(company._id, company.companyName)
+                      }
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))
+          ) : (
             <tr>
-
               <td
-                colSpan={8}
+                colSpan={7}
                 style={{
                   textAlign: "center",
                   padding: "24px",
@@ -232,13 +189,9 @@ export default function CompanyTable() {
               >
                 No company found.
               </td>
-
             </tr>
-
           )}
-
         </tbody>
-
       </table>
 
       <div
@@ -251,11 +204,8 @@ export default function CompanyTable() {
           gap: "10px",
         }}
       >
-
         <span>
-
           Showing {companies.length} of {filteredCompanies.length}
-
         </span>
 
         <div
@@ -264,7 +214,6 @@ export default function CompanyTable() {
             gap: "10px",
           }}
         >
-
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
@@ -278,13 +227,8 @@ export default function CompanyTable() {
           >
             Next
           </button>
-
         </div>
-
       </div>
-
     </div>
-
   );
-
 }

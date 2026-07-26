@@ -9,11 +9,23 @@ import {
   updateEmployee,
   getEmployeeById,
   getCompanies,
-} from "@/lib/api";
+  getDepartments,
+  getDesignations,
+}
+ from "@/lib/api";
 
 interface Company {
-  id: number;
+  _id: string;
   companyName: string;
+}
+interface Department {
+  _id: string;
+  departmentName: string;
+}
+
+interface Designation {
+  _id: string;
+  designationName: string;
 }
 
 interface EmployeeFormData {
@@ -30,7 +42,7 @@ interface EmployeeFormData {
   address: string;
   companyId: string;
   departmentId: string;
-  designationId: string;
+  designation: string; 
 }
 
 export default function EmployeeForm() {
@@ -40,11 +52,21 @@ export default function EmployeeForm() {
   const params = useParams();
 
   const isEdit = !!params?.id;
+  const user =
+  typeof window !== "undefined"
+    ? JSON.parse(localStorage.getItem("user") || "{}")
+    : {};
 
   const [loading, setLoading] = useState(false);
 
   const [companies, setCompanies] =
     useState<Company[]>([]);
+
+    const [departments, setDepartments] =
+  useState<Department[]>([]);
+
+const [designations, setDesignations] =
+  useState<Designation[]>([]);
 
   const [form, setForm] =
     useState<EmployeeFormData>({
@@ -75,31 +97,60 @@ export default function EmployeeForm() {
 
       departmentId: "",
 
-      designationId: "",
+      designation: "",
 
     });
 
-  useEffect(() => {
+ useEffect(() => {
 
-    async function loadCompanies() {
+  async function loadMasterData() {
 
-      try {
+    try {
 
-        const data = await getCompanies();
+      let companyRes: any = [];
 
-        setCompanies(data);
+if (user?.role === "SUPER_ADMIN") {
+  companyRes = await getCompanies();
+}
 
-      } catch (error) {
+const [departmentRes, designationRes] = await Promise.all([
+  getDepartments(),
+  getDesignations(),
+]);
 
-        console.error(error);
+if (user?.role === "SUPER_ADMIN") {
+  setCompanies(
+    Array.isArray(companyRes)
+      ? companyRes
+      : companyRes.data || []
+  );
+}
 
-      }
+setDepartments(
+  Array.isArray(departmentRes)
+    ? departmentRes
+    : departmentRes.data || []
+);
+
+setDesignations(
+  Array.isArray(designationRes)
+    ? designationRes
+    : designationRes.data || []
+);
+
+      
+
+    } catch (error) {
+
+      console.error(error);
 
     }
 
-    loadCompanies();
+  }
 
-  }, []);
+  loadMasterData();
+
+}, []);
 
   useEffect(() => {
 
@@ -109,18 +160,21 @@ export default function EmployeeForm() {
 
       try {
 
-        const data =
-          await getEmployeeById(
-            Number(params.id)
-          );
+        const id = Array.isArray(params.id)
+  ? params.id[0]
+  : params.id;
 
-        setForm({
+const response = await getEmployeeById(id);
 
-          employeeCode:
-            data.employeeCode || "",
+const data = response.data;
 
-          firstName:
-            data.firstName || "",
+setForm({
+
+  employeeCode:
+    data.employeeCode || "",
+
+  firstName:
+    data.firstName || "",
 
           lastName:
             data.lastName || "",
@@ -150,13 +204,13 @@ export default function EmployeeForm() {
             data.address || "",
 
           companyId:
-            data.companyId?.toString() || "",
+  data.companyId?._id || "",
 
-          departmentId:
-            data.departmentId?.toString() || "",
+departmentId:
+  data.departmentId?._id || "",
 
-          designationId:
-            data.designationId?.toString() || "",
+designation:
+  data.designation || "",
 
         });
 
@@ -194,16 +248,14 @@ async function handleSubmit(
 
   e.preventDefault();
 
-  
-
-    if (
+  if (
   !form.employeeCode ||
   !form.firstName ||
   !form.email ||
   !form.phone ||
   !form.companyId ||
   !form.departmentId ||
-  !form.designationId
+  !form.designation
 ) {
   alert("Please fill required fields.");
   return;
@@ -215,58 +267,55 @@ async function handleSubmit(
 
     setLoading(true);
 
-    const payload = {
+   const payload = {
 
-      employeeCode: form.employeeCode,
+  employeeCode: form.employeeCode,
 
-      firstName: form.firstName,
+  firstName: form.firstName,
 
-      lastName: form.lastName,
+  lastName: form.lastName,
 
-      email: form.email,
+  email: form.email,
 
-      phone: form.phone,
+  phone: form.phone,
 
-      dateOfBirth: form.dateOfBirth,
+  dateOfBirth: form.dateOfBirth,
 
-      joiningDate: form.joiningDate,
+  joiningDate: form.joiningDate,
 
-      gender: form.gender,
+  gender: form.gender,
 
-      employmentType: form.employmentType,
+  employmentType: form.employmentType,
 
-      salary: Number(form.salary),
+  salary: Number(form.salary),
 
-      address: form.address,
+  address: form.address,
 
-      companyId: Number(form.companyId),
+  companyId: form.companyId,
 
-      departmentId: Number(form.departmentId),
+  departmentId: form.departmentId,
 
-      designationId: Number(form.designationId),
+  designation: form.designation,
 
-    };
-alert(
-  JSON.stringify(form, null, 2)
-);
+};
 
-alert(
-  JSON.stringify(payload, null, 2)
-);
 
-alert(JSON.stringify(payload));
 
 if (isEdit) {
 
-  await updateEmployee(
-    Number(params.id),
-    payload
-  );
+  const id = Array.isArray(params.id)
+  ? params.id[0]
+  : params.id;
+
+await updateEmployee(
+  id,
+  payload
+);
 
 } else {
 
   await createEmployee(payload);
-  alert(JSON.stringify(payload, null, 2));
+ 
 
 }
 
@@ -302,30 +351,51 @@ return (
 
   <div className={styles.grid}>
 
-    <div className={styles.group}>
+  {/* Employee Code */}
+  <div className={styles.group}>
+    <label>Employee Code</label>
 
-      <label>Employee Code</label>
+    <input
+      name="employeeCode"
+      value={form.employeeCode}
+      onChange={handleChange}
+      placeholder="EMP001"
+    />
+  </div>
 
-      <input
-        name="employeeCode"
-        value={form.employeeCode}
-        onChange={handleChange}
-      />
+  {/* Department */}
+  <div className={styles.group}>
+    <label>Department</label>
 
-    </div>
+    <select
+      name="departmentId"
+      value={form.departmentId}
+      onChange={handleChange}
+    >
+      <option value="">Select Department</option>
 
-    <div className={styles.group}>
+      {departments.map((department) => (
+        <option
+          key={department._id}
+          value={department._id}
+        >
+          {department.departmentName}
+        </option>
+      ))}
+    </select>
+  </div>
 
-      <label>First Name</label>
+  {/* First Name */}
+  <div className={styles.group}>
+    <label>First Name</label>
 
-      <input
-        name="firstName"
-        value={form.firstName}
-        onChange={handleChange}
-      />
-
-    </div>
-
+    <input
+      name="firstName"
+      value={form.firstName}
+      onChange={handleChange}
+    />
+  </div>
+    
     <div className={styles.group}>
 
       <label>Last Name</label>
@@ -380,13 +450,11 @@ return (
         {companies.map((company) => (
 
           <option
-            key={company.id}
-            value={company.id}
-          >
-
-            {company.companyName}
-
-          </option>
+  key={company._id}
+  value={company._id}
+>
+  {company.companyName}
+</option>
 
         ))}
 
@@ -394,29 +462,29 @@ return (
 
     </div>
 
-    <div className={styles.group}>
-
-      <label>Department Id</label>
-
-      <input
-        name="departmentId"
-        value={form.departmentId}
-        onChange={handleChange}
-      />
-
-    </div>
+    
 
     <div className={styles.group}>
 
-      <label>Designation Id</label>
+  <label>Designation</label>
 
-      <input
-        name="designationId"
-        value={form.designationId}
-        onChange={handleChange}
+  <input
+  list="designation-list"
+  name="designation"
+  value={form.designation}
+  onChange={handleChange}
+/>
+
+  <datalist id="designation-list">
+    {designations.map((designation) => (
+      <option
+        key={designation._id}
+        value={designation.designationName}
       />
+    ))}
+  </datalist>
 
-    </div>
+</div>
         <div className={styles.group}>
 
       <label>Joining Date</label>

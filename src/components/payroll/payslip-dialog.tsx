@@ -3,13 +3,25 @@
 interface Props {
   open: boolean;
   onClose: () => void;
+  payroll: any;
 }
 
 export default function PayslipDialog({
   open,
   onClose,
+  payroll,
 }: Props) {
-  if (!open) return null;
+  if (!open || !payroll) return null;
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = () => {
+    // Abhi browser Print Dialog open hoga.
+    // Wahan "Save as PDF" select karke PDF download kar sakte ho.
+    window.print();
+  };
 
   return (
     <div
@@ -67,18 +79,70 @@ export default function PayslipDialog({
           }}
         >
           <tbody>
-            <Row label="Employee" value="Rohan Singh" />
-            <Row label="Employee ID" value="EMP001" />
-            <Row label="Company" value="Khushi Hind" />
-            <Row label="Month" value="July 2026" />
-            <Row label="Basic Salary" value="₹ 50,000" />
-            <Row label="HRA" value="₹ 10,000" />
-            <Row label="Bonus" value="₹ 3,000" />
-            <Row label="Other Allowance" value="₹ 2,000" />
-            <Row label="PF" value="- ₹ 1,800" />
-            <Row label="ESI" value="- ₹ 500" />
-            <Row label="TDS" value="- ₹ 2,500" />
-            <Row label="Net Salary" value="₹ 60,200" />
+            <Row
+              label="Employee"
+              value={`${payroll.employeeId?.firstName} ${payroll.employeeId?.lastName}`}
+            />
+
+            <Row
+              label="Employee ID"
+              value={payroll.employeeId?.employeeCode}
+            />
+
+            <Row
+              label="Company"
+              value={payroll.companyId?.companyName}
+            />
+
+            <Row
+              label="Month"
+              value={`${payroll.month}/${payroll.year}`}
+            />
+
+            <Row
+              label="Basic Salary"
+              value={`₹ ${payroll.basicSalary}`}
+            />
+
+            <Row
+              label="HRA"
+              value={`₹ ${payroll.hra}`}
+            />
+
+            <Row
+              label="Conveyance"
+              value={`₹ ${payroll.conveyance}`}
+            />
+
+            <Row
+              label="Special Allowance"
+              value={`₹ ${payroll.specialAllowance}`}
+            />
+
+            <Row
+              label="Incentive"
+              value={`₹ ${payroll.incentive}`}
+            />
+
+            <Row
+              label="PF"
+              value={`- ₹ ${payroll.pf}`}
+            />
+
+            <Row
+              label="ESI"
+              value={`- ₹ ${payroll.esi}`}
+            />
+
+            <Row
+              label="Deduction"
+              value={`- ₹ ${payroll.deduction}`}
+            />
+
+            <Row
+              label="Net Salary"
+              value={`₹ ${payroll.netSalary}`}
+            />
           </tbody>
         </table>
 
@@ -91,6 +155,7 @@ export default function PayslipDialog({
           }}
         >
           <button
+            onClick={handleDownloadPDF}
             style={{
               padding: "12px 20px",
               border: "none",
@@ -104,6 +169,7 @@ export default function PayslipDialog({
           </button>
 
           <button
+            onClick={handlePrint}
             style={{
               padding: "12px 20px",
               border: "none",
@@ -135,6 +201,7 @@ function Row({
           padding: "12px 0",
           fontWeight: 600,
           color: "#475569",
+          borderBottom: "1px solid #e2e8f0",
         }}
       >
         {label}
@@ -142,8 +209,10 @@ function Row({
 
       <td
         style={{
+          padding: "12px 0",
           textAlign: "right",
           fontWeight: 700,
+          borderBottom: "1px solid #e2e8f0",
         }}
       >
         {value}

@@ -13,23 +13,22 @@ export default function EmployeeProfile() {
 
   useEffect(() => {
 
-    async function loadEmployee() {
+   async function loadEmployee() {
+  try {
+    const employeeId = Array.isArray(params.id)
+      ? params.id[0]
+      : params.id;
 
-      try {
+    const data = await getEmployeeById(employeeId);
 
-        const data = await getEmployeeById(
-          Number(params.id)
-        );
+console.log("Employee API =", data);
+console.log("Employee data =", data?.data);
 
-        setEmployee(data);
-
-      } catch (error) {
-
-        console.error(error);
-
-      }
-
-    }
+setEmployee(data?.data ?? null);
+  } catch (error) {
+    console.error(error);
+  }
+}
 
     loadEmployee();
 

@@ -3,8 +3,24 @@
 import AppLayout from "../../components/layout/app-layout";
 import PayrollTable from "../../components/payroll/payroll-table";
 import PayrollCards from "../../components/payroll/payroll-cards";
+import { useEffect, useState } from "react";
+import { getPayroll } from "@/lib/api";
 
 export default function PayrollPage() {
+  const [payrollData, setPayrollData] = useState<any[]>([]);
+
+useEffect(() => {
+  loadPayroll();
+}, []);
+
+async function loadPayroll() {
+  try {
+    const response = await getPayroll();
+    setPayrollData(response.data || []);
+  } catch (error) {
+    console.error(error);
+  }
+}
   return (
     <AppLayout>
       <div
@@ -38,11 +54,11 @@ export default function PayrollPage() {
         </div>
       </div>
 
-      <PayrollCards />
+      <PayrollCards payrollData={payrollData} />
 
 <div style={{ height: 24 }} />
 
-<PayrollTable />
+<PayrollTable payrollData={payrollData} />  
     </AppLayout>
   );
 }
