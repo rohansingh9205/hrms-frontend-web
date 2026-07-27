@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api`;
 console.log("API_URL =", API_URL);
 
 if (typeof window !== "undefined") {
@@ -20,11 +20,16 @@ export async function getDashboard(companyId?: string) {
     headers: getHeaders(),
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch dashboard");
-  }
+  const text = await response.text();
 
-  return response.json();
+console.log("Dashboard Status =", response.status);
+console.log("Dashboard Response =", text);
+
+if (!response.ok) {
+  throw new Error(text);
+}
+
+return text ? JSON.parse(text) : null;
 }
 
 // ================= Companies =================

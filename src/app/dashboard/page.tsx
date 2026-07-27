@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "../../components/layout/app-layout";
 import DashboardCards from "../../components/dashboard/DashboardCards";
@@ -9,6 +10,13 @@ import CompanySummary from "../../components/dashboard/CompanySummary";
 
 export default function DashboardPage() {
   const router = useRouter();
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    router.replace("/login");
+  }
+}, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");

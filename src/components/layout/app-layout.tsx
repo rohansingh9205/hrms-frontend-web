@@ -2,13 +2,15 @@
 
 import AppSidebar from "./app-sidebar";
 import AppHeader from "./app-header";
+import AuthGuard from "../AuthGuard";
 
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
+ return (
+  <AuthGuard>
     <div
       style={{
         display: "flex",
@@ -34,5 +36,6 @@ export default function AppLayout({
         </main>
       </div>
     </div>
-  );
+  </AuthGuard>
+);
 }
